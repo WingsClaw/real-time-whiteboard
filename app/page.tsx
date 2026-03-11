@@ -6,7 +6,7 @@ import { initializeCanvas, setTool, clearCanvas, exportToImage } from '@/lib/can
 import { supabase } from '@/lib/supabase';
 
 export default function Home() {
-  const canvasRef = useRef<any>(null);
+  const canvasRef = useRef<Canvas | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTool, setCurrentTool] = useState<'pen' | 'eraser' | 'shape' | 'text' | 'sticky'>('pen');
   const [color, setColor] = useState('#000000');
@@ -37,18 +37,14 @@ export default function Home() {
 
     window.addEventListener('resize', handleResize);
 
-    // Set up real-time subscription
+    // Set up real-time subscription using Broadcast (works on free tier)
     const subscription = supabase
-      .channel('board_elements')
+      .channel('board-updates')
       .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'board_elements',
-        },
+        'broadcast',
+        { event: 'element_update' },
         (payload) => {
-          console.log('Change received!', payload);
+          console.log('Real-time update received!', payload);
           // Handle real-time updates here
         }
       )

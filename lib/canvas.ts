@@ -1,5 +1,6 @@
-import { Canvas } from 'fabric/fabric-impl';
-import type { StaticCanvas, FabricObject } from 'fabric/fabric-impl';
+import { Canvas, Rect, Circle, IText, Group, Path } from 'fabric/fabric-impl';
+import { PencilBrush } from 'fabric/fabric-impl';
+import { fabric } from 'fabric';
 
 // Types for canvas elements
 export type CanvasElementType = 'pen' | 'eraser' | 'shape' | 'text' | 'sticky' | 'image';
@@ -12,7 +13,7 @@ export interface CanvasElementData {
 }
 
 // Initialize fabric canvas with default settings
-export function initializeCanvas(canvasElement: HTMLCanvasElement): StaticCanvas {
+export function initializeCanvas(canvasElement: HTMLCanvasElement): Canvas {
   const canvas = new Canvas(canvasElement, {
     isDrawingMode: true,
     backgroundColor: '#ffffff',
@@ -20,34 +21,36 @@ export function initializeCanvas(canvasElement: HTMLCanvasElement): StaticCanvas
   });
 
   // Configure drawing brush
-  canvas.freeDrawingBrush = new (window as any).fabric.PencilBrush(canvas);
-  canvas.freeDrawingBrush.color = '#000000';
-  canvas.freeDrawingBrush.width = 3;
+  const brush = new PencilBrush(canvas);
+  brush.color = '#000000';
+  brush.width = 3;
+  (canvas as any).freeDrawingBrush = brush;
 
   return canvas;
 }
 
 // Set drawing tool
-export function setTool(canvas: StaticCanvas, tool: CanvasElementType, options: any = {}) {
+export function setTool(canvas: Canvas, tool: CanvasElementType, options: any = {}) {
   canvas.isDrawingMode = tool === 'pen' || tool === 'eraser';
 
-  if (tool === 'pen') {
-    canvas.freeDrawingBrush.color = options.color || '#000000';
-    canvas.freeDrawingBrush.width = options.size || 3;
-  } else if (tool === 'eraser') {
-    canvas.freeDrawingBrush.color = '#ffffff';
-    canvas.freeDrawingBrush.width = options.size || 20;
-  } else {
-    canvas.isDrawingMode = false;
+  const brush = (canvas as any).freeDrawingBrush;
+  if (brush) {
+    if (tool === 'pen') {
+      brush.color = options.color || '#000000';
+      brush.width = options.size || 3;
+    } else if (tool === 'eraser') {
+      brush.color = '#ffffff';
+      brush.width = options.size || 20;
+    }
   }
 }
 
 // Add shape to canvas
-export function addShape(canvas: StaticCanvas, type: 'rect' | 'circle', options: any) {
-  let shape: FabricObject;
+export function addShape(canvas: Canvas, type: 'rect' | 'circle', options: any) {
+  let shape: Rect | Circle;
 
   if (type === 'rect') {
-    shape = new (window as any).fabric.Rect({
+    shape = new Rect({
       width: 100,
       height: 100,
       fill: 'transparent',
@@ -56,7 +59,7 @@ export function addShape(canvas: StaticCanvas, type: 'rect' | 'circle', options:
       ...options,
     });
   } else {
-    shape = new (window as any).fabric.Circle({
+    shape = new Circle({
       radius: 50,
       fill: 'transparent',
       stroke: options.color || '#000000',
@@ -71,8 +74,8 @@ export function addShape(canvas: StaticCanvas, type: 'rect' | 'circle', options:
 }
 
 // Add text to canvas
-export function addText(canvas: StaticCanvas, text: string, options: any) {
-  const textObj = new (window as any).fabric.IText(text, {
+export function addText(canvas: Canvas, text: string, options: any) {
+  const textObj = new IText(text, {
     fontSize: 20,
     fill: options.color || '#000000',
     ...options,
@@ -84,8 +87,8 @@ export function addText(canvas: StaticCanvas, text: string, options: any) {
 }
 
 // Add sticky note to canvas
-export function addStickyNote(canvas: StaticCanvas, text: string, options: any) {
-  const rect = new (window as any).fabric.Rect({
+export function addStickyNote(canvas: Canvas, text: string, options: any) {
+  const rect = new Rect({
     width: 200,
     height: 150,
     fill: options.color || '#fff475',
@@ -93,7 +96,7 @@ export function addStickyNote(canvas: StaticCanvas, text: string, options: any) 
     strokeWidth: 1,
   });
 
-  const textObj = new (window as any).fabric.IText(text, {
+  const textObj = new IText(text, {
     fontSize: 14,
     fill: '#000000',
     left: 10,
@@ -101,7 +104,7 @@ export function addStickyNote(canvas: StaticCanvas, text: string, options: any) 
     width: 180,
   });
 
-  const group = new (window as any).fabric.Group([rect, textObj], {
+  const group = new Group([rect, textObj], {
     ...options,
   });
 
@@ -111,10 +114,10 @@ export function addStickyNote(canvas: StaticCanvas, text: string, options: any) 
 }
 
 // Convert canvas element to database format
-export function elementToData(element: FabricObject): CanvasElementData {
+export function elementToData(element: any): CanvasElementData {
   const data = element.toJSON();
 
-  if (element instanceof (window as any).fabric.Path) {
+  if (element instanceof Path) {
     return {
       type: 'pen',
       data: {
@@ -132,11 +135,11 @@ export function elementToData(element: FabricObject): CanvasElementData {
 }
 
 // Convert database data to canvas element
-export function dataToElement(canvasElementData: CanvasElementData): FabricObject | null {
+export function dataToElement(canvasElementData: CanvasElementData): any {
   const { type, data } = canvasElementData;
 
   if (type === 'pen') {
-    return new (window as any).fabric.Path(data.path, {
+    return new Path(data.path, {
       stroke: data.stroke,
       strokeWidth: data.strokeWidth,
       fill: 'transparent',
@@ -144,20 +147,20 @@ export function dataToElement(canvasElementData: CanvasElementData): FabricObjec
   }
 
   if (type === 'shape') {
-    return fabric.util.enlivenObjects([data])[0];
+    return (fabric.util as any).enlivenObjects([data])[0];
   }
 
   return null;
 }
 
 // Clear canvas
-export function clearCanvas(canvas: StaticCanvas) {
+export function clearCanvas(canvas: Canvas) {
   canvas.clear();
   canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
 }
 
 // Export canvas to image
-export function exportToImage(canvas: StaticCanvas, format: 'png' | 'jpeg' = 'png'): string {
+export function exportToImage(canvas: Canvas, format: 'png' | 'jpeg' = 'png'): string {
   return canvas.toDataURL({
     format,
     quality: 1,
@@ -165,9 +168,9 @@ export function exportToImage(canvas: StaticCanvas, format: 'png' | 'jpeg' = 'pn
 }
 
 // Import image to canvas
-export function importImage(canvas: StaticCanvas, dataUrl: string): Promise<FabricObject> {
+export function importImage(canvas: Canvas, dataUrl: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    (window as any).fabric.Image.fromURL(dataUrl, (img: FabricObject) => {
+    (fabric.Image as any).fromURL(dataUrl, (img: any) => {
       if (!img) {
         reject(new Error('Failed to load image'));
         return;
