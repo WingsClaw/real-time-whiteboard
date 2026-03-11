@@ -1,4 +1,5 @@
-import { fabric } from 'fabric';
+import { Canvas } from 'fabric/fabric-impl';
+import type { StaticCanvas, FabricObject } from 'fabric/fabric-impl';
 
 // Types for canvas elements
 export type CanvasElementType = 'pen' | 'eraser' | 'shape' | 'text' | 'sticky' | 'image';
@@ -11,15 +12,15 @@ export interface CanvasElementData {
 }
 
 // Initialize fabric canvas with default settings
-export function initializeCanvas(canvasElement: HTMLCanvasElement): fabric.Canvas {
-  const canvas = new fabric.Canvas(canvasElement, {
+export function initializeCanvas(canvasElement: HTMLCanvasElement): StaticCanvas {
+  const canvas = new Canvas(canvasElement, {
     isDrawingMode: true,
     backgroundColor: '#ffffff',
     selection: true,
   });
 
   // Configure drawing brush
-  canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+  canvas.freeDrawingBrush = new (window as any).fabric.PencilBrush(canvas);
   canvas.freeDrawingBrush.color = '#000000';
   canvas.freeDrawingBrush.width = 3;
 
@@ -27,7 +28,7 @@ export function initializeCanvas(canvasElement: HTMLCanvasElement): fabric.Canva
 }
 
 // Set drawing tool
-export function setTool(canvas: fabric.Canvas, tool: CanvasElementType, options: any = {}) {
+export function setTool(canvas: StaticCanvas, tool: CanvasElementType, options: any = {}) {
   canvas.isDrawingMode = tool === 'pen' || tool === 'eraser';
 
   if (tool === 'pen') {
@@ -42,11 +43,11 @@ export function setTool(canvas: fabric.Canvas, tool: CanvasElementType, options:
 }
 
 // Add shape to canvas
-export function addShape(canvas: fabric.Canvas, type: 'rect' | 'circle', options: any) {
-  let shape: fabric.Object;
+export function addShape(canvas: StaticCanvas, type: 'rect' | 'circle', options: any) {
+  let shape: FabricObject;
 
   if (type === 'rect') {
-    shape = new fabric.Rect({
+    shape = new (window as any).fabric.Rect({
       width: 100,
       height: 100,
       fill: 'transparent',
@@ -55,7 +56,7 @@ export function addShape(canvas: fabric.Canvas, type: 'rect' | 'circle', options
       ...options,
     });
   } else {
-    shape = new fabric.Circle({
+    shape = new (window as any).fabric.Circle({
       radius: 50,
       fill: 'transparent',
       stroke: options.color || '#000000',
@@ -70,8 +71,8 @@ export function addShape(canvas: fabric.Canvas, type: 'rect' | 'circle', options
 }
 
 // Add text to canvas
-export function addText(canvas: fabric.Canvas, text: string, options: any) {
-  const textObj = new fabric.IText(text, {
+export function addText(canvas: StaticCanvas, text: string, options: any) {
+  const textObj = new (window as any).fabric.IText(text, {
     fontSize: 20,
     fill: options.color || '#000000',
     ...options,
@@ -83,8 +84,8 @@ export function addText(canvas: fabric.Canvas, text: string, options: any) {
 }
 
 // Add sticky note to canvas
-export function addStickyNote(canvas: fabric.Canvas, text: string, options: any) {
-  const rect = new fabric.Rect({
+export function addStickyNote(canvas: StaticCanvas, text: string, options: any) {
+  const rect = new (window as any).fabric.Rect({
     width: 200,
     height: 150,
     fill: options.color || '#fff475',
@@ -92,7 +93,7 @@ export function addStickyNote(canvas: fabric.Canvas, text: string, options: any)
     strokeWidth: 1,
   });
 
-  const textObj = new fabric.IText(text, {
+  const textObj = new (window as any).fabric.IText(text, {
     fontSize: 14,
     fill: '#000000',
     left: 10,
@@ -100,7 +101,7 @@ export function addStickyNote(canvas: fabric.Canvas, text: string, options: any)
     width: 180,
   });
 
-  const group = new fabric.Group([rect, textObj], {
+  const group = new (window as any).fabric.Group([rect, textObj], {
     ...options,
   });
 
@@ -110,10 +111,10 @@ export function addStickyNote(canvas: fabric.Canvas, text: string, options: any)
 }
 
 // Convert canvas element to database format
-export function elementToData(element: fabric.Object): CanvasElementData {
+export function elementToData(element: FabricObject): CanvasElementData {
   const data = element.toJSON();
 
-  if (element instanceof fabric.Path) {
+  if (element instanceof (window as any).fabric.Path) {
     return {
       type: 'pen',
       data: {
@@ -131,11 +132,11 @@ export function elementToData(element: fabric.Object): CanvasElementData {
 }
 
 // Convert database data to canvas element
-export function dataToElement(canvasElementData: CanvasElementData): fabric.Object | null {
+export function dataToElement(canvasElementData: CanvasElementData): FabricObject | null {
   const { type, data } = canvasElementData;
 
   if (type === 'pen') {
-    return new fabric.Path(data.path, {
+    return new (window as any).fabric.Path(data.path, {
       stroke: data.stroke,
       strokeWidth: data.strokeWidth,
       fill: 'transparent',
@@ -150,13 +151,13 @@ export function dataToElement(canvasElementData: CanvasElementData): fabric.Obje
 }
 
 // Clear canvas
-export function clearCanvas(canvas: fabric.Canvas) {
+export function clearCanvas(canvas: StaticCanvas) {
   canvas.clear();
   canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
 }
 
 // Export canvas to image
-export function exportToImage(canvas: fabric.Canvas, format: 'png' | 'jpeg' = 'png'): string {
+export function exportToImage(canvas: StaticCanvas, format: 'png' | 'jpeg' = 'png'): string {
   return canvas.toDataURL({
     format,
     quality: 1,
@@ -164,9 +165,9 @@ export function exportToImage(canvas: fabric.Canvas, format: 'png' | 'jpeg' = 'p
 }
 
 // Import image to canvas
-export function importImage(canvas: fabric.Canvas, dataUrl: string): Promise<fabric.Image> {
+export function importImage(canvas: StaticCanvas, dataUrl: string): Promise<FabricObject> {
   return new Promise((resolve, reject) => {
-    fabric.Image.fromURL(dataUrl, (img) => {
+    (window as any).fabric.Image.fromURL(dataUrl, (img: FabricObject) => {
       if (!img) {
         reject(new Error('Failed to load image'));
         return;

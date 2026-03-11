@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { fabric } from 'fabric';
 import { initializeCanvas, setTool, clearCanvas, exportToImage } from '@/lib/canvas';
 import { supabase } from '@/lib/supabase';
 
 export default function Home() {
-  const canvasRef = useRef<fabric.Canvas | null>(null);
+  const canvasRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTool, setCurrentTool] = useState<'pen' | 'eraser' | 'shape' | 'text' | 'sticky'>('pen');
   const [color, setColor] = useState('#000000');
